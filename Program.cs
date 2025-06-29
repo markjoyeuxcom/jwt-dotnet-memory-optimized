@@ -174,7 +174,12 @@ builder.Services.AddAuthentication(options =>
             // Cache validated tokens to reduce validation overhead
             var cache = context.HttpContext.RequestServices.GetRequiredService<IMemoryCache>();
             var token = context.Request.Headers.Authorization.ToString().Replace("Bearer ", "");
-            cache.Set($"token:{token.GetHashCode()}", context.Principal, TimeSpan.FromMinutes(15));
+            var cacheOptions = new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15),
+                Size = 1 // Required when SizeLimit is set
+            };
+            cache.Set($"token:{token.GetHashCode()}", context.Principal, cacheOptions);
             return Task.CompletedTask;
         }
     };
