@@ -247,9 +247,9 @@ public class HighPerformanceCache : IHighPerformanceCache, IDisposable
     /// </summary>
     private async Task<byte[]> SerializeAsync<T>(T value)
     {
-        using var buffer = new ArrayPoolBufferWriter<byte>();
-        await JsonSerializer.SerializeAsync(buffer, value, _jsonOptions);
-        return buffer.WrittenSpan.ToArray();
+        using var stream = new MemoryStream();
+        await JsonSerializer.SerializeAsync(stream, value, _jsonOptions);
+        return stream.ToArray();
     }
 
     /// <summary>

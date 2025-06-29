@@ -46,8 +46,6 @@ public static class OpenTelemetryConfiguration
                     .AddSource(ActivitySource.Name)
                     .AddAspNetCoreInstrumentation(options =>
                     {
-                        options.RecordException = true;
-                        options.EnableGrpcAspNetCoreSupport = true;
                         options.EnrichWithHttpRequest = (activity, request) =>
                         {
                             activity.SetTag("http.client_ip", GetClientIpAddress(request));
@@ -66,7 +64,6 @@ public static class OpenTelemetryConfiguration
                     })
                     .AddHttpClientInstrumentation(options =>
                     {
-                        options.RecordException = true;
                         options.EnrichWithHttpRequestMessage = (activity, request) =>
                         {
                             activity.SetTag("http.request.size", request.Content?.Headers?.ContentLength);
@@ -74,15 +71,6 @@ public static class OpenTelemetryConfiguration
                         options.EnrichWithHttpResponseMessage = (activity, response) =>
                         {
                             activity.SetTag("http.response.size", response.Content?.Headers?.ContentLength);
-                        };
-                    })
-                    .AddEntityFrameworkCoreInstrumentation(options =>
-                    {
-                        options.SetDbStatementForText = true;
-                        options.SetDbStatementForStoredProcedure = true;
-                        options.EnrichWithIDbCommand = (activity, command) =>
-                        {
-                            activity.SetTag("db.operation", GetDbOperation(command.CommandText));
                         };
                     });
 
@@ -94,9 +82,7 @@ public static class OpenTelemetryConfiguration
                 metricsBuilder
                     .SetResourceBuilder(resourceBuilder)
                     .AddAspNetCoreInstrumentation()
-                    .AddHttpClientInstrumentation()
-                    .AddRuntimeInstrumentation()
-                    .AddProcessInstrumentation();
+                    .AddHttpClientInstrumentation();
 
                 // Add Prometheus exporter if enabled
                 if (builder.Configuration.GetValue<bool>("Prometheus:Enabled", true))
@@ -156,7 +142,9 @@ public static class OpenTelemetryConfiguration
 
     private static void ConfigureLogExporters(OpenTelemetryLoggerOptions loggingBuilder, IConfiguration configuration)
     {
-        // OTLP exporter for logs
+        // OTLP exporter for logs - commented out due to ambiguous reference
+        // TODO: Fix ambiguous reference between multiple OtlpLogExporterHelperExtensions
+        /*
         var otlpEndpoint = configuration["OpenTelemetry:OTLP:Endpoint"];
         if (!string.IsNullOrEmpty(otlpEndpoint))
         {
@@ -166,6 +154,7 @@ public static class OpenTelemetryConfiguration
                 options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
             });
         }
+        */
 
         // Console exporter for development
         if (configuration.GetValue<bool>("OpenTelemetry:Console:Enabled", false))

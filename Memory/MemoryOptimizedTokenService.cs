@@ -125,12 +125,17 @@ public class MemoryOptimizedTokenService : IMemoryOptimizedTokenService
 
             // Cache token metadata for fast validation
             var cacheKey = $"token_meta:{tokenString.GetHashCode()}";
+            var cacheEntryOptions = new MemoryCacheEntryOptions
+            {
+                AbsoluteExpiration = expiry,
+                Size = 1 // Each token metadata counts as 1 unit
+            };
             _cache.Set(cacheKey, new TokenMetadata 
             { 
                 UserId = user.Id, 
                 Username = user.Username,
                 ExpiresAt = expiry 
-            }, expiry);
+            }, cacheEntryOptions);
 
             _logger.LogDebug("Generated access token for user {UserId} (cached as {CacheKey})", user.Id, cacheKey);
             
@@ -216,7 +221,12 @@ public class MemoryOptimizedTokenService : IMemoryOptimizedTokenService
                     ? DateTime.UtcNow.AddMinutes(5) 
                     : jwtToken.ValidTo;
                 
-                _cache.Set(cacheKey, principal, cacheExpiry);
+                var validationCacheOptions = new MemoryCacheEntryOptions
+                {
+                    AbsoluteExpiration = cacheExpiry,
+                    Size = 1 // Each validated principal counts as 1 unit
+                };
+                _cache.Set(cacheKey, principal, validationCacheOptions);
                 _logger.LogDebug("Token validated and cached for {CacheKey} until {Expiry}", cacheKey, cacheExpiry);
             }
 
@@ -254,7 +264,12 @@ public class MemoryOptimizedTokenService : IMemoryOptimizedTokenService
     public void BlacklistToken(string token, TimeSpan expiry)
     {
         var blacklistKey = $"blacklist:{token.GetHashCode()}";
-        _cache.Set(blacklistKey, true, expiry);
+        var blacklistCacheOptions = new MemoryCacheEntryOptions
+        {
+            AbsoluteExpiration = DateTime.UtcNow.Add(expiry),
+            Size = 1 // Each blacklisted token counts as 1 unit
+        };
+        _cache.Set(blacklistKey, true, blacklistCacheOptions);
         
         // Also remove from validation cache
         var validationKey = $"validated_token:{token.GetHashCode()}";

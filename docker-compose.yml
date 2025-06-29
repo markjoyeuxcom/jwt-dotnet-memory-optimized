@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  jwt-api:
+    build: .
+    ports:
+      - "8080:80"
+    environment:
+      - UseInMemoryDatabase=false
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=JwtApiDb;User Id=sa;Password=YourPassword123;TrustServerCertificate=True
+      - JWT_KEY=production-jwt-key-must-be-at-least-32-characters-long-and-secure-change-this
+      - ASPNETCORE_ENVIRONMENT=Production
+      - Jwt__Issuer=MyCompany.Api
+      - Jwt__Audience=MyCompany.Users
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.5'
+    
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=YourPassword123
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    ports:
+      - "1433:1433"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "YourPassword123", "-Q", "SELECT 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
+
+volumes:
+  sqlserver_data:

@@ -1,0 +1,34 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jwt-api-config
+  namespace: jwt-api
+data:
+  # Application configuration
+  ASPNETCORE_ENVIRONMENT: "Production"
+  UseInMemoryDatabase: "false"
+  
+  # JWT Configuration
+  Jwt__Issuer: "MyCompany.JwtApi"
+  Jwt__Audience: "MyCompany.Users"
+  Jwt__ExpiryMinutes: "15"
+  Jwt__RefreshExpiryDays: "7"
+  
+  # Performance Optimization
+  DOTNET_TieredPGO: "1"
+  DOTNET_ReadyToRun: "1"
+  DOTNET_TC_QuickJitForLoops: "1"
+  DOTNET_gcServer: "1"
+  
+  # Logging
+  Logging__LogLevel__Default: "Information"
+  Logging__LogLevel__Microsoft: "Warning"
+  Logging__LogLevel__System: "Warning"
+  
+  # OpenTelemetry
+  OpenTelemetry__Jaeger__Endpoint: "http://jaeger-collector:14268/api/traces"
+  
+  # Serilog
+  Serilog__WriteTo__1__Name: "Elasticsearch"
+  Serilog__WriteTo__1__Args__nodeUris: "http://elasticsearch:9200"
+  Serilog__WriteTo__1__Args__indexFormat: "jwt-api-{0:yyyy.MM.dd}"

@@ -361,11 +361,3 @@ public class RefreshTokenRequest
     public required string RefreshToken { get; set; }
 }
 
-/// <summary>
-/// Client information for audit logging
-/// </summary>
-public class ClientInfo
-{
-    public string? IpAddress { get; set; }
-    public string? UserAgent { get; set; }
-}

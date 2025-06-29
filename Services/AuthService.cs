@@ -54,7 +54,7 @@ public class AuthService : IAuthService
             };
 
             await _userService.CreateAsync(user);
-            return AuthResult.Success(user.Id);
+            return AuthResult.CreateSuccess(user.Id);
         }
         catch (Exception ex)
         {
@@ -67,16 +67,30 @@ public class AuthService : IAuthService
     {
         try
         {
+            _logger.LogInformation("Attempting login for email: {Email}", request.Email);
+            
             var user = await _userService.GetByEmailAsync(request.Email);
-            if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+            if (user == null)
             {
+                _logger.LogWarning("User not found for email: {Email}", request.Email);
+                return AuthResult.Failure("Invalid email or password");
+            }
+            
+            _logger.LogInformation("User found: {UserId}, checking password", user.Id);
+            
+            if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+            {
+                _logger.LogWarning("Password verification failed for user: {UserId}", user.Id);
                 return AuthResult.Failure("Invalid email or password");
             }
 
             if (!user.IsActive)
             {
+                _logger.LogWarning("Account is inactive for user: {UserId}", user.Id);
                 return AuthResult.Failure("Account is inactive");
             }
+
+            _logger.LogInformation("Authentication successful for user: {UserId}, generating tokens", user.Id);
 
             // Generate tokens
             var accessToken = _tokenService.GenerateAccessToken(user);
@@ -89,11 +103,12 @@ public class AuthService : IAuthService
             user.UpdateLastLogin();
             await _context.SaveChangesAsync();
 
-            return AuthResult.Success(user, accessToken, refreshToken.Token);
+            _logger.LogInformation("Login completed successfully for user: {UserId}", user.Id);
+            return AuthResult.CreateSuccess(user, accessToken, refreshToken.Token);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during user login");
+            _logger.LogError(ex, "Error during user login for email: {Email}", request.Email);
             return AuthResult.Failure("Login failed");
         }
     }
@@ -126,7 +141,7 @@ public class AuthService : IAuthService
             _context.RefreshTokens.Add(newRefreshToken);
             await _context.SaveChangesAsync();
 
-            return AuthResult.Success(user, newAccessToken, newRefreshToken.Token);
+            return AuthResult.CreateSuccess(user, newAccessToken, newRefreshToken.Token);
         }
         catch (Exception ex)
         {
@@ -148,7 +163,7 @@ public class AuthService : IAuthService
                 await _context.SaveChangesAsync();
             }
 
-            return AuthResult.Success();
+            return AuthResult.CreateSuccess();
         }
         catch (Exception ex)
         {
@@ -178,13 +193,13 @@ public class AuthResult
         UserId = userId;
     }
 
-    public static AuthResult Success(User user, string accessToken, string refreshToken)
+    public static AuthResult CreateSuccess(User user, string accessToken, string refreshToken)
         => new(true, user: user, accessToken: accessToken, refreshToken: refreshToken);
 
-    public static AuthResult Success(int userId)
+    public static AuthResult CreateSuccess(int userId)
         => new(true, userId: userId);
 
-    public static AuthResult Success()
+    public static AuthResult CreateSuccess()
         => new(true);
 
     public static AuthResult Failure(string errorMessage)

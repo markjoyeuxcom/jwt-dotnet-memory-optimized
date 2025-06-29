@@ -37,10 +37,30 @@ public class MemoryMonitoringMiddleware
         var initialMemory = GC.GetTotalMemory(false);
         var stopwatch = Stopwatch.StartNew();
         
-        // Add custom headers for debugging
+        // Add initial headers
         var requestId = context.TraceIdentifier;
-        context.Response.Headers.Add("X-Request-ID", requestId);
-        context.Response.Headers.Add("X-Memory-Initial", initialMemory.ToString());
+        context.Response.Headers["X-Request-ID"] = requestId;
+        context.Response.Headers["X-Memory-Initial"] = initialMemory.ToString();
+
+        // Setup callback to add final headers before response starts
+        context.Response.OnStarting(() =>
+        {
+            stopwatch.Stop();
+            
+            // Capture final memory state
+            var finalMemory = GC.GetTotalMemory(false);
+            var memoryDelta = finalMemory - initialMemory;
+            
+            // Add performance headers safely before response starts
+            context.Response.Headers["X-Memory-Final"] = finalMemory.ToString();
+            context.Response.Headers["X-Memory-Delta"] = memoryDelta.ToString();
+            context.Response.Headers["X-Response-Time"] = stopwatch.ElapsedMilliseconds.ToString();
+            context.Response.Headers["X-GC-Gen0"] = GC.CollectionCount(0).ToString();
+            context.Response.Headers["X-GC-Gen1"] = GC.CollectionCount(1).ToString();
+            context.Response.Headers["X-GC-Gen2"] = GC.CollectionCount(2).ToString();
+            
+            return Task.CompletedTask;
+        });
 
         try
         {
@@ -49,19 +69,12 @@ public class MemoryMonitoringMiddleware
         }
         finally
         {
-            stopwatch.Stop();
+            if (!stopwatch.IsRunning)
+                stopwatch.Stop();
             
-            // Capture final memory state
+            // Capture final memory state for logging only
             var finalMemory = GC.GetTotalMemory(false);
             var memoryDelta = finalMemory - initialMemory;
-            
-            // Add performance headers
-            context.Response.Headers.Add("X-Memory-Final", finalMemory.ToString());
-            context.Response.Headers.Add("X-Memory-Delta", memoryDelta.ToString());
-            context.Response.Headers.Add("X-Response-Time", stopwatch.ElapsedMilliseconds.ToString());
-            context.Response.Headers.Add("X-GC-Gen0", GC.CollectionCount(0).ToString());
-            context.Response.Headers.Add("X-GC-Gen1", GC.CollectionCount(1).ToString());
-            context.Response.Headers.Add("X-GC-Gen2", GC.CollectionCount(2).ToString());
 
             // Log memory usage for monitoring
             if (memoryDelta > 1_000_000) // Log if more than 1MB allocated
@@ -149,11 +162,11 @@ public class PodIdentificationMiddleware
     public async Task InvokeAsync(HttpContext context)
     {
         // Add pod identification headers
-        context.Response.Headers.Add("X-Pod-Name", _podName);
-        context.Response.Headers.Add("X-Pod-IP", _podIP);
-        context.Response.Headers.Add("X-Machine-Name", _machineName);
-        context.Response.Headers.Add("X-Server-Framework", ".NET 8.0");
-        context.Response.Headers.Add("X-Memory-Optimized", "true");
+        context.Response.Headers["X-Pod-Name"] = _podName;
+        context.Response.Headers["X-Pod-IP"] = _podIP;
+        context.Response.Headers["X-Machine-Name"] = _machineName;
+        context.Response.Headers["X-Server-Framework"] = ".NET 8.0";
+        context.Response.Headers["X-Memory-Optimized"] = "true";
 
         await _next(context);
     }

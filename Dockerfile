@@ -47,7 +47,7 @@ RUN dotnet publish "JwtApi.csproj" \
     --no-restore \
     --self-contained false \
     --verbosity minimal \
-    -p:PublishTrimmed=true \
+    -p:PublishTrimmed=false \
     -p:PublishSingleFile=false \
     -p:TreatWarningsAsErrors=false
 

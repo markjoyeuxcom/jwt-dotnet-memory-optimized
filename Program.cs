@@ -15,6 +15,7 @@ using JwtApi.Models;
 using JwtApi.Middleware;
 using JwtApi.Memory;
 using System.Threading.RateLimiting;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 // Configure Serilog for high-performance logging
 Log.Logger = new LoggerConfiguration()
@@ -33,7 +34,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseSerilog();
 
 // Configure JSON options for memory efficiency
-builder.Services.Configure<JsonOptions>(options =>
+builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =>
 {
     options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
     options.SerializerOptions.WriteIndented = false; // Reduce memory footprint
@@ -53,15 +54,31 @@ builder.Services.Configure<Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServe
 // Database context with connection pooling for memory efficiency
 builder.Services.AddDbContextPool<ApplicationDbContext>(options =>
 {
-    options.UseSqlServer(
-        builder.Configuration.GetConnectionString("DefaultConnection"),
-        sqlOptions =>
-        {
-            sqlOptions.EnableRetryOnFailure(
-                maxRetryCount: 3,
-                maxRetryDelay: TimeSpan.FromSeconds(5),
-                errorNumbersToAdd: null);
-        });
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    var useInMemory = builder.Configuration.GetValue<bool>("UseInMemoryDatabase", false);
+    
+    // Use InMemory database if explicitly requested or if connection string indicates SQLite but file doesn't exist
+    if (useInMemory || 
+        (builder.Environment.IsDevelopment() && 
+         (string.IsNullOrEmpty(connectionString) || 
+          connectionString.Contains(".db", StringComparison.OrdinalIgnoreCase))))
+    {
+        options.UseInMemoryDatabase("JwtApiDb");
+        Log.Information("Using In-Memory database for development/testing");
+    }
+    else
+    {
+        options.UseSqlServer(
+            connectionString,
+            sqlOptions =>
+            {
+                sqlOptions.EnableRetryOnFailure(
+                    maxRetryCount: 3,
+                    maxRetryDelay: TimeSpan.FromSeconds(5),
+                    errorNumbersToAdd: null);
+            });
+        Log.Information("Using SQL Server database");
+    }
     
     // Memory optimization: Configure context pooling
     options.EnableServiceProviderCaching();
@@ -80,7 +97,7 @@ builder.Services.AddMemoryCache(options =>
 builder.Services.AddSingleton<ObjectPool<StringBuilder>>(serviceProvider =>
 {
     var provider = new DefaultObjectPoolProvider();
-    var policy = new StringBuilderPooledObjectPolicy();
+    var policy = new JwtApi.Memory.StringBuilderPooledObjectPolicy();
     return provider.Create(policy);
 });
 
@@ -164,6 +181,14 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
+
+// Response compression for reduced bandwidth
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProvider>();
+    options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProvider>();
+});
 
 // Controllers with memory-optimized JSON
 builder.Services.AddControllers(options =>

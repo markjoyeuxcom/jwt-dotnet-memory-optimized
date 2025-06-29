@@ -72,18 +72,27 @@ public class PrometheusMetrics : BackgroundService
 
         _httpRequestDuration = Metrics
             .CreateHistogram("jwt_api_dotnet_http_request_duration_seconds", "HTTP request duration",
-                new[] { "method", "route", "status_code", "pod_name" },
-                new double[] { 0.001, 0.005, 0.015, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 5 });
+                new HistogramConfiguration
+                {
+                    LabelNames = new[] { "method", "route", "status_code", "pod_name" },
+                    Buckets = new double[] { 0.001, 0.005, 0.015, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 1, 2, 5 }
+                });
 
         _httpRequestSize = Metrics
             .CreateHistogram("jwt_api_dotnet_http_request_size_bytes", "HTTP request size",
-                new[] { "method", "route", "pod_name" },
-                new double[] { 100, 1000, 10000, 100000, 1000000 });
+                new HistogramConfiguration
+                {
+                    LabelNames = new[] { "method", "route", "pod_name" },
+                    Buckets = new double[] { 100, 1000, 10000, 100000, 1000000 }
+                });
 
         _httpResponseSize = Metrics
             .CreateHistogram("jwt_api_dotnet_http_response_size_bytes", "HTTP response size",
-                new[] { "method", "route", "status_code", "pod_name" },
-                new double[] { 100, 1000, 10000, 100000, 1000000 });
+                new HistogramConfiguration
+                {
+                    LabelNames = new[] { "method", "route", "status_code", "pod_name" },
+                    Buckets = new double[] { 100, 1000, 10000, 100000, 1000000 }
+                });
 
         // Initialize authentication metrics
         _authAttempts = Metrics
@@ -92,8 +101,11 @@ public class PrometheusMetrics : BackgroundService
 
         _authDuration = Metrics
             .CreateHistogram("jwt_api_dotnet_auth_duration_seconds", "Authentication duration",
-                new[] { "type", "status", "pod_name" },
-                new double[] { 0.01, 0.05, 0.1, 0.2, 0.5, 1, 2 });
+                new HistogramConfiguration
+                {
+                    LabelNames = new[] { "type", "status", "pod_name" },
+                    Buckets = new double[] { 0.01, 0.05, 0.1, 0.2, 0.5, 1, 2 }
+                });
 
         _tokenOperations = Metrics
             .CreateCounter("jwt_api_dotnet_token_operations_total", "Token operations",
@@ -101,8 +113,11 @@ public class PrometheusMetrics : BackgroundService
 
         _tokenGenerationDuration = Metrics
             .CreateHistogram("jwt_api_dotnet_token_generation_duration_seconds", "Token generation duration",
-                new[] { "type", "pod_name" },
-                new double[] { 0.001, 0.005, 0.01, 0.02, 0.05, 0.1 });
+                new HistogramConfiguration
+                {
+                    LabelNames = new[] { "type", "pod_name" },
+                    Buckets = new double[] { 0.001, 0.005, 0.01, 0.02, 0.05, 0.1 }
+                });
 
         _activeTokens = Metrics
             .CreateGauge("jwt_api_dotnet_active_tokens_total", "Active tokens",
@@ -115,8 +130,11 @@ public class PrometheusMetrics : BackgroundService
 
         _dbQueryDuration = Metrics
             .CreateHistogram("jwt_api_dotnet_db_query_duration_seconds", "Database query duration",
-                new[] { "operation", "table", "status", "pod_name" },
-                new double[] { 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1 });
+                new HistogramConfiguration
+                {
+                    LabelNames = new[] { "operation", "table", "status", "pod_name" },
+                    Buckets = new double[] { 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1 }
+                });
 
         _dbErrors = Metrics
             .CreateCounter("jwt_api_dotnet_db_errors_total", "Database errors",
@@ -129,8 +147,11 @@ public class PrometheusMetrics : BackgroundService
 
         _cacheDuration = Metrics
             .CreateHistogram("jwt_api_dotnet_cache_operation_duration_seconds", "Cache operation duration",
-                new[] { "operation", "pod_name" },
-                new double[] { 0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05 });
+                new HistogramConfiguration
+                {
+                    LabelNames = new[] { "operation", "pod_name" },
+                    Buckets = new double[] { 0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05 }
+                });
 
         _cacheSize = Metrics
             .CreateGauge("jwt_api_dotnet_cache_size_bytes", "Cache size",
@@ -155,8 +176,11 @@ public class PrometheusMetrics : BackgroundService
 
         _gcDuration = Metrics
             .CreateHistogram("jwt_api_dotnet_gc_duration_seconds", "Garbage collection duration",
-                new[] { "generation", "pod_name" },
-                new double[] { 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1 });
+                new HistogramConfiguration
+                {
+                    LabelNames = new[] { "generation", "pod_name" },
+                    Buckets = new double[] { 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1 }
+                });
 
         _memoryUsage = Metrics
             .CreateGauge("jwt_api_dotnet_memory_usage_bytes", "Memory usage",
@@ -173,8 +197,11 @@ public class PrometheusMetrics : BackgroundService
 
         _requestQueueTime = Metrics
             .CreateHistogram("jwt_api_dotnet_request_queue_time_seconds", "Request queue time",
-                new[] { "pod_name" },
-                new double[] { 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1 });
+                new HistogramConfiguration
+                {
+                    LabelNames = new[] { "pod_name" },
+                    Buckets = new double[] { 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1 }
+                });
 
         _exceptions = Metrics
             .CreateCounter("jwt_api_dotnet_exceptions_total", "Application exceptions",

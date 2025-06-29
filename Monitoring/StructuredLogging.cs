@@ -3,8 +3,9 @@ using Serilog.Context;
 using Serilog.Core;
 using Serilog.Events;
 using Serilog.Sinks.Elasticsearch;
-using Serilog.Enrichers.Span;
 using System.Diagnostics;
+using Microsoft.Extensions.Logging;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace JwtApi.Monitoring;
 
@@ -69,7 +70,6 @@ public static class StructuredLogging
                     AutoRegisterTemplateVersion = AutoRegisterTemplateVersion.ESv7,
                     TypeName = null,
                     BatchAction = ElasticOpType.Index,
-                    CustomFormatter = new ElasticsearchJsonFormatter(),
                     EmitEventFailure = EmitEventFailureHandling.WriteToSelfLog,
                     QueueSizeLimit = 5000,
                     Period = TimeSpan.FromSeconds(2),

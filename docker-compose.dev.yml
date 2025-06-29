@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  jwt-api:
+    build: .
+    ports:
+      - "8080:80"
+    environment:
+      - UseInMemoryDatabase=true
+      - ASPNETCORE_ENVIRONMENT=Development
+      - Logging__LogLevel__Default=Debug
+      - JWT_KEY=development-jwt-key-not-for-production-use-only-for-local-development-testing-purposes
+    volumes:
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

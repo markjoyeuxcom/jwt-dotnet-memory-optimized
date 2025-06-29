@@ -59,19 +59,6 @@ public class ApplicationDbContext : DbContext
         SeedData(modelBuilder);
     }
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        if (!optionsBuilder.IsConfigured)
-        {
-            // Default to in-memory database for development
-            optionsBuilder.UseInMemoryDatabase("JwtApiDb");
-        }
-
-        // Memory optimization settings
-        optionsBuilder.EnableSensitiveDataLogging(false);
-        optionsBuilder.EnableServiceProviderCaching();
-        optionsBuilder.EnableDetailedErrors(false);
-    }
 
     private static void SeedData(ModelBuilder modelBuilder)
     {
